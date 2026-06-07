@@ -1,0 +1,93 @@
+services:
+
+  # ─── Main development container ───────────────────────────────────────────
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached       # Mount entire project into container
+    command: sleep infinity        # Keep container alive; you run commands manually
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://hms:hms@postgres:5432/hms
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=development
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - hms-network
+
+  # ─── PostgreSQL database ───────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hms
+      POSTGRES_PASSWORD: hms
+      POSTGRES_DB: hms
+    volumes:
+      - postgres-data:/var/lib/postgresql/data   # Data persists across restarts
+    ports:
+      - "5432:5432"
+    networks:
+      - hms-network
+
+  # ─── Redis (Celery broker + cache) ────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - hms-network
+
+  # ─── Celery worker (scheduled messages) ───────────────────────────────────
+  # Start manually when needed: docker compose up celery-worker
+  celery-worker:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    command: celery -A app.tasks.celery_app worker --loglevel=info
+    working_dir: /workspace/backend
+    volumes:
+      - ..:/workspace:cached
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://hms:hms@postgres:5432/hms
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - hms-network
+    profiles:
+      - celery     # Only starts with: docker compose --profile celery up
+
+  # ─── Celery Beat (task scheduler) ─────────────────────────────────────────
+  celery-beat:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+    working_dir: /workspace/backend
+    volumes:
+      - ..:/workspace:cached
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://hms:hms@postgres:5432/hms
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - hms-network
+    profiles:
+      - celery
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  hms-network:
+    driver: bridge

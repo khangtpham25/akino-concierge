@@ -1,6 +1,105 @@
+*This project is actively stored on [GitLab](https://gitlab.com/khangtpham25/akino-concierge).*
+
 # akino-concierge
 
+## Architecture Overview
 
+```
+hms/
+├── .devcontainer/          # Docker + DevPod dev environment
+│   ├── devcontainer.json   # VS Code devcontainer config
+│   ├── docker-compose.yml  # All services (app, postgres, redis, celery)
+│   └── Dockerfile          # Dev container image
+│
+├── backend/                # FastAPI backend
+│   ├── app/
+│   │   ├── main.py         # FastAPI entry point → run with: uvicorn app.main:app --reload
+│   │   ├── core/
+│   │   │   ├── config.py   # All settings loaded from .env
+│   │   │   └── database.py # Async PostgreSQL connection + session
+│   │   ├── models/
+│   │   │   └── models.py   # SQLAlchemy tables: Property, R;qoom, Guest, Booking, MessageLog
+│   │   ├── schemas/        # Pydantic schemas for request/response validation (add here)
+│   │   ├── api/v1/         # Route handlers (add here)
+│   │   ├── services/
+│   │   │   ├── messaging/
+│   │   │   │   ├── base.py  # Abstract interface — add new channels by implementing this
+│   │   │   │   └── zalo.py  # Zalo OA API implementation
+│   │   │   └── ota/         # Future: Booking.com, Agoda integrations
+│   │   └── tasks/
+│   │       ├── celery_app.py       # Celery configuration
+│   │       └── messaging_tasks.py  # Scheduled message tasks
+│   ├── tests/
+│   ├── .env.example        # Copy to .env and fill in secrets
+│   └── pyproject.toml      # Dependencies + Ruff + mypy config
+│
+└── frontend/               # PySide6 desktop app
+    └── src/
+        ├── main.py         # Entry point
+        ├── views/          # Full page views (dashboard, bookings, etc.)
+        └── widgets/        # Reusable UI components
+```
+
+## Getting Started
+
+### 1. Open in DevPod
+```bash
+devpod up . --ide vscode
+```
+
+### 2. Install backend dependencies
+```bash
+cd backend
+pip install -e ".[dev]"
+```
+
+### 3. Set up environment
+```bash
+cp .env.example .env
+# Edit .env with your values
+```
+
+### 4. Run the backend
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+API docs available at: http://localhost:8000/docs
+
+### 5. Run Celery workers (for scheduled messages)
+```bash
+docker compose --profile celery up
+```
+
+## Feature Implementation Guide
+
+### Adding a new API route
+1. Create `backend/app/schemas/your_model.py` — Pydantic input/output schemas
+2. Create `backend/app/api/v1/your_route.py` — route handlers
+3. Register router in `backend/app/main.py`
+
+### Adding a new messaging channel (e.g. SMS)
+1. Create `backend/app/services/messaging/sms.py`
+2. Implement `BaseMessagingService` abstract methods
+3. Add task in `messaging_tasks.py`
+
+### Adding an OTA integration (Booking.com, Agoda)
+1. Create `backend/app/services/ota/booking_com.py`
+2. Handle webhook for new bookings → create Booking record → schedule messages
+
+## Tech Stack
+| Layer | Technology |
+|---|---|
+| Backend API | FastAPI (Python 3.12) |
+| Database | PostgreSQL 16 |
+| ORM | SQLAlchemy 2 (async) |
+| Task queue | Celery + Redis |
+| Messaging | Zalo OA API |
+| Desktop UI | PySide6 (Qt) |
+| Linting | Ruff |
+| Type checking | mypy |
+| Dev environment | Docker + DevPod |
+
+---
 
 ## Getting started
 

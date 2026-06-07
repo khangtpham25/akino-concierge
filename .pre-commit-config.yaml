@@ -1,0 +1,40 @@
+repos:
+- repo: meta
+  hooks:
+  - id: check-useless-excludes
+  - id: check-hooks-apply
+
+# ─── Ruff — replaces clang-format (formatting) and clang-tidy (linting) ──────
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.11.13
+  hooks:
+  - id: ruff                   # Linter — catches errors and bad patterns
+    args: [--fix]              # Auto-fix safe issues
+  - id: ruff-format            # Formatter — equivalent to clang-format
+
+# ─── mypy — static type checking, equivalent to clang-tidy's type analysis ───
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.16.0
+  hooks:
+  - id: mypy
+    additional_dependencies:
+      - pydantic>=2.7.0
+      - sqlalchemy>=2.0.0
+    stages: [manual]           # Run manually like clang-tidy was: pre-commit run mypy --hook-stage manual
+
+# ─── General pre-commit hooks ─────────────────────────────────────────────────
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+  - id: check-added-large-files # Warn if accidentally committing large files
+  - id: check-ast               # Validates Python files parse correctly
+  - id: check-merge-conflict
+  - id: check-yaml
+  - id: check-toml              # Validates pyproject.toml syntax
+  - id: debug-statements        # Catches forgotten breakpoint() and pdb calls
+  - id: destroyed-symlinks
+  - id: detect-private-key      # Prevents committing .env secrets
+  - id: end-of-file-fixer
+  - id: fix-byte-order-marker
+  - id: mixed-line-ending
+  - id: trailing-whitespace

@@ -1,0 +1,46 @@
+{
+  "name": "HMS Dev Environment",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  // VS Code extensions auto-installed in the container
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.pylance",
+        "charliermarsh.ruff",         // Ruff linter/formatter
+        "ms-python.mypy-type-checker", // mypy type checking
+        "ms-azuretools.vscode-docker",
+        "humao.rest-client",           // Test FastAPI endpoints directly in VS Code
+        "mtxr.sqltools",               // Query PostgreSQL from VS Code
+        "mtxr.sqltools-driver-pg"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+          }
+        },
+        "mypy-type-checker.args": ["--config-file=pyproject.toml"]
+      }
+    }
+  },
+
+  // Run after container is created
+  "postCreateCommand": "cd /workspace/backend && pip install -e '.[dev]'",
+
+  // Forward ports: FastAPI, PostgreSQL, Redis
+  "forwardPorts": [8000, 5432, 6379],
+  "portsAttributes": {
+    "8000": { "label": "FastAPI Backend" },
+    "5432": { "label": "PostgreSQL" },
+    "6379": { "label": "Redis" }
+  }
+}
