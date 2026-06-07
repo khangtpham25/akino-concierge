@@ -3,6 +3,7 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",
+  "remoteUser": "vscode",
 
   // VS Code extensions auto-installed in the container
   "customizations": {
@@ -18,6 +19,7 @@
         "mtxr.sqltools-driver-pg"
       ],
       "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
         "python.defaultInterpreterPath": "/usr/local/bin/python",
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "charliermarsh.ruff",
@@ -34,13 +36,14 @@
   },
 
   // Run after container is created
-  "postCreateCommand": "cd /workspace/backend && pip install -e '.[dev]'",
+  "postCreateCommand": "cd /workspace/backend && pip install -e \".[dev]\"",
 
-  // Forward ports: FastAPI, PostgreSQL, Redis
-  "forwardPorts": [8000, 5432, 6379],
+  "forwardPorts": [8000],
   "portsAttributes": {
-    "8000": { "label": "FastAPI Backend" },
-    "5432": { "label": "PostgreSQL" },
-    "6379": { "label": "Redis" }
-  }
+    "8000": { "label": "FastAPI Backend" }
+  },
+
+  "remoteEnv": {
+    "SHELL": "/bin/zsh"
+},
 }
